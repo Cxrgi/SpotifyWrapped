@@ -16,8 +16,3 @@ Ideal, wenn du deine Musikstatistiken speichern oder teilen willst, ohne auf den
 ## 🛠️ Wie installiert / benutzt man das?
 
 Da es sich um eine statische Webseite handelt, kannst du sie **direkt öffnen** oder auf jeden beliebigen Webserver deployen. Beispiel:  
-
-```bash
-# entweder:
-open index.html
-# oder auf Webspace / GitHub Pages hochladen
