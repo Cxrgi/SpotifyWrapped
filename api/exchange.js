@@ -34,6 +34,7 @@ export default async function handler(req, res) {
 
   try {
     // FIX: Die korrekte Spotify Token URL nutzen
+    // KORREKTUR: Echte Spotify Accounts URL
     const response = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
