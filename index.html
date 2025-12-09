@@ -141,7 +141,11 @@
   }
 
   async function exchangeCode(code){
-    const body = { grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, origin: ORIGIN };
+    const body = {
+      code,
+      redirect_uri: REDIRECT_URI,
+      code_verifier: localStorage.getItem("pkce_verifier")
+    };
     const res = await fetch(SERVERLESS_TOKEN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -389,5 +393,6 @@
   </script>
 </body>
 </html>
+
 
 
