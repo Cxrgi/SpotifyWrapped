@@ -180,18 +180,16 @@
 
   // ---------------- SPOTIFY API HELPERS ----------------
   async function fetchWebApi(endpoint, token){
-    // FIX: Korrekte Spotify API URL (v1) und $ Zeichen hinzugefügt
+    // KORREKTUR: Echte Spotify URL + Backticks (`) + ${} Syntax
     const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, { 
       headers: { Authorization: `Bearer ${token}` } 
     });
     
     if (!res.ok) {
-        // Wir werfen hier den Status, damit der Catch-Block unten ihn fangen kann
         throw new Error('API Error: ' + res.status);
     }
     return res.json();
   }
-
   // ---------------- APP LOGIC ----------------
   let allData = {};
 
@@ -410,5 +408,6 @@
   </script>
 </body>
 </html>
+
 
 
