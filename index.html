@@ -134,8 +134,9 @@
     const verifier = generateCodeVerifier(64);
     localStorage.setItem('pkce_verifier', verifier);
     const challenge = await generateCodeChallenge(verifier);
-    // FIX: $ hinzugefügt vor {encode...}
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
+    
+    // KORREKTUR: ${...} Syntax repariert
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=$${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
     window.location.href = authUrl;
   }
 
@@ -173,8 +174,8 @@
 
   // ---------------- SPOTIFY API HELPERS ----------------
   async function fetchWebApi(endpoint, token){
-    // FIX: $ hinzugefügt vor {endpoint}
-    const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
+    // KORREKTUR: ${endpoint} Syntax repariert (das $ hat gefehlt!)
+    const res = await fetch(`https://api.spotify.com/v1/$${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error('API Error: ' + res.status);
     return res.json();
   }
@@ -189,17 +190,13 @@
     localStorage.removeItem('spotify_data_cache');
     localStorage.removeItem('pkce_verifier');
     window.location.hash = '';
-    window.location.search = ''; // Query Parameter auch entfernen
+    window.location.search = ''; 
     location.reload();
   }
 
   async function loadData(){
     let token = localStorage.getItem('spotify_token');
     if (!token) return;
-
-    // Cache erstmal ignorieren um zu sehen ob es live geht
-    // const cached = localStorage.getItem('spotify_data_cache');
-    // if (cached) { renderDashboard(JSON.parse(cached)); return; }
 
     document.getElementById('login-section').classList.add('hidden');
     document.getElementById('loader').classList.remove('hidden');
@@ -220,23 +217,32 @@
       renderDashboard(allData);
     } catch (e) {
       console.error(e);
-      // Try refresh token
+      // Wenn der fetchWebApi wegen Syntaxfehler scheitert, landet er hier.
+      // Er versucht zu refreshen, schafft es, ruft loadData neu auf -> Loop.
       const refresh = localStorage.getItem('spotify_refresh_token');
+      
+      // Sicherheits-Check: Wenn wir gerade erst gerefresht haben (innerhalb 10s) und es immer noch fehlschlägt, abbrechen.
+      const lastRefresh = parseInt(localStorage.getItem('last_refresh_attempt') || '0');
+      if (Date.now() - lastRefresh < 10000) {
+          alert('Daten konnten trotz Refresh nicht geladen werden. Bitte Cache leeren und neu einloggen.');
+          logout();
+          return;
+      }
+
       if (refresh) {
         console.log("Versuche Token Refresh...");
         try {
+          localStorage.setItem('last_refresh_attempt', Date.now().toString());
           const newTokens = await refreshToken(refresh);
           localStorage.setItem('spotify_token', newTokens.access_token);
-          localStorage.setItem('spotify_token_timestamp', Date.now());
           if (newTokens.refresh_token) localStorage.setItem('spotify_refresh_token', newTokens.refresh_token);
-          return loadData(); // Retry loading
+          return loadData(); 
         } catch (err) {
           console.error('Refresh failed', err);
-          alert('Session konnte nicht erneuert werden. Bitte neu einloggen.');
+          alert('Session abgelaufen. Bitte neu einloggen.');
           logout();
         }
       } else {
-        console.error("Kein Refresh Token oder anderer Fehler");
         alert('Ein Fehler ist aufgetreten. Bitte neu einloggen.');
         logout();
       }
@@ -375,10 +381,8 @@
       try {
         const tokens = await exchangeCode(code);
         localStorage.setItem('spotify_token', tokens.access_token);
-        localStorage.setItem('spotify_token_timestamp', Date.now());
         if (tokens.refresh_token) localStorage.setItem('spotify_refresh_token', tokens.refresh_token);
         
-        // URL bereinigen
         window.history.replaceState({}, document.title, window.location.pathname);
         
         await loadData();
