@@ -131,13 +131,18 @@
 
   // ---------------- AUTH FLOW ----------------
   async function loginPKCE(){
+    // 1. Verifier generieren
     const verifier = generateCodeVerifier(64);
     localStorage.setItem('pkce_verifier', verifier);
+
+    // 2. Challenge generieren
     const challenge = await generateCodeChallenge(verifier);
-    
-    // FIX: Korrekte Spotify Auth URL und $ Zeichen hinzugefügt
+
+    // 3. WICHTIG: Hier war der Fehler. Die URL muss exakt so aussehen:
+    // Nutze Backticks ` am Anfang und Ende!
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
-    
+
+    // Weiterleitung zu Spotify
     window.location.href = authUrl;
   }
 
@@ -405,4 +410,5 @@
   </script>
 </body>
 </html>
+
 
