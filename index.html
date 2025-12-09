@@ -134,8 +134,10 @@
     const verifier = generateCodeVerifier(64);
     localStorage.setItem('pkce_verifier', verifier);
     const challenge = await generateCodeChallenge(verifier);
-    // FIX: $ hinzugefügt vor {encode...}
+    
+    // FIX: Korrekte Spotify Auth URL und $ Zeichen hinzugefügt
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
+    
     window.location.href = authUrl;
   }
 
@@ -173,9 +175,15 @@
 
   // ---------------- SPOTIFY API HELPERS ----------------
   async function fetchWebApi(endpoint, token){
-    // FIX: $ hinzugefügt vor {endpoint}
-    const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error('API Error: ' + res.status);
+    // FIX: Korrekte Spotify API URL (v1) und $ Zeichen hinzugefügt
+    const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    });
+    
+    if (!res.ok) {
+        // Wir werfen hier den Status, damit der Catch-Block unten ihn fangen kann
+        throw new Error('API Error: ' + res.status);
+    }
     return res.json();
   }
 
@@ -397,3 +405,4 @@
   </script>
 </body>
 </html>
+
