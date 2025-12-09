@@ -12,9 +12,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { code, refresh_token, redirect_uri } = req.body;
+  // WICHTIG: Hier holen wir 'code_verifier' aus dem Request Body
+  const { code, refresh_token, redirect_uri, code_verifier } = req.body;
 
   const params = new URLSearchParams();
+  
   if (refresh_token) {
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", refresh_token);
@@ -22,6 +24,11 @@ export default async function handler(req, res) {
     params.append("grant_type", "authorization_code");
     params.append("code", code);
     params.append("redirect_uri", redirect_uri);
+    
+    // WICHTIG: Hier senden wir den Verifier an Spotify weiter
+    if (code_verifier) {
+      params.append("code_verifier", code_verifier);
+    }
   }
 
   params.append("client_id", process.env.CLIENT_ID);
@@ -37,11 +44,14 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (data.error) {
+      // Logge den Fehler für besseres Debugging in Vercel Logs
+      console.error("Spotify API Error:", data); 
       return res.status(400).json({ error: data.error_description || data.error });
     }
 
     return res.status(200).json(data);
   } catch (error) {
+    console.error("Server Error:", error);
     return res.status(500).json({
       error: "Internal server error",
       details: error.message,
