@@ -12,9 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // WICHTIG: Hier holen wir 'code_verifier' aus dem Request Body
   const { code, refresh_token, redirect_uri, code_verifier } = req.body;
-
   const params = new URLSearchParams();
   
   if (refresh_token) {
@@ -25,16 +23,17 @@ export default async function handler(req, res) {
     params.append("code", code);
     params.append("redirect_uri", redirect_uri);
     
-    // WICHTIG: Hier senden wir den Verifier an Spotify weiter
     if (code_verifier) {
       params.append("code_verifier", code_verifier);
     }
   }
 
+  // Diese Umgebungsvariablen müssen in Vercel gesetzt sein!
   params.append("client_id", process.env.CLIENT_ID);
   params.append("client_secret", process.env.CLIENT_SECRET);
 
   try {
+    // FIX: Die korrekte Spotify Token URL nutzen
     const response = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -44,7 +43,6 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (data.error) {
-      // Logge den Fehler für besseres Debugging in Vercel Logs
       console.error("Spotify API Error:", data); 
       return res.status(400).json({ error: data.error_description || data.error });
     }
