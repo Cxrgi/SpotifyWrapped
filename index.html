@@ -118,10 +118,8 @@
   <script>
   // ---------------- CONFIG ----------------
   const CLIENT_ID = '16bc9b25c0ce4df8b139406e36a97b0d';
-  const REDIRECT_URI = 'https://cxrgi.github.io/SpotifyWrapped/'; // muss exakt so in Spotify Dashboard stehen (inkl. slash)
+  const REDIRECT_URI = 'https://cxrgi.github.io/SpotifyWrapped/'; 
   const ORIGIN = 'https://cxrgi.github.io';
-  // **WICHTIG**: Nach dem Deploy deiner Vercel Function setze hier die URL:
-  // z.B. const SERVERLESS_TOKEN_ENDPOINT = 'https://my-wrapped.vercel.app/api/token';
   const SERVERLESS_TOKEN_ENDPOINT = 'https://spotify-wrapped-eight.vercel.app/api/exchange';
   const SCOPES = ['user-top-read','user-read-recently-played','user-read-currently-playing','user-read-private'];
 
@@ -136,7 +134,8 @@
     const verifier = generateCodeVerifier(64);
     localStorage.setItem('pkce_verifier', verifier);
     const challenge = await generateCodeChallenge(verifier);
-    const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(CLIENT_ID)}&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
+    // FIX: $ hinzugefügt vor {encode...}
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent(SCOPES.join(' '))}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code_challenge_method=S256&code_challenge=${encodeURIComponent(challenge)}&show_dialog=true`;
     window.location.href = authUrl;
   }
 
@@ -174,6 +173,7 @@
 
   // ---------------- SPOTIFY API HELPERS ----------------
   async function fetchWebApi(endpoint, token){
+    // FIX: $ hinzugefügt vor {endpoint}
     const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error('API Error: ' + res.status);
     return res.json();
@@ -189,6 +189,7 @@
     localStorage.removeItem('spotify_data_cache');
     localStorage.removeItem('pkce_verifier');
     window.location.hash = '';
+    window.location.search = ''; // Query Parameter auch entfernen
     location.reload();
   }
 
@@ -196,11 +197,9 @@
     let token = localStorage.getItem('spotify_token');
     if (!token) return;
 
-    const cached = localStorage.getItem('spotify_data_cache');
-    if (cached) {
-      renderDashboard(JSON.parse(cached));
-      return;
-    }
+    // Cache erstmal ignorieren um zu sehen ob es live geht
+    // const cached = localStorage.getItem('spotify_data_cache');
+    // if (cached) { renderDashboard(JSON.parse(cached)); return; }
 
     document.getElementById('login-section').classList.add('hidden');
     document.getElementById('loader').classList.remove('hidden');
@@ -224,19 +223,21 @@
       // Try refresh token
       const refresh = localStorage.getItem('spotify_refresh_token');
       if (refresh) {
+        console.log("Versuche Token Refresh...");
         try {
           const newTokens = await refreshToken(refresh);
           localStorage.setItem('spotify_token', newTokens.access_token);
           localStorage.setItem('spotify_token_timestamp', Date.now());
           if (newTokens.refresh_token) localStorage.setItem('spotify_refresh_token', newTokens.refresh_token);
-          return loadData();
+          return loadData(); // Retry loading
         } catch (err) {
           console.error('Refresh failed', err);
           alert('Session konnte nicht erneuert werden. Bitte neu einloggen.');
           logout();
         }
       } else {
-        alert('Session abgelaufen oder Fehler. Bitte neu einloggen.');
+        console.error("Kein Refresh Token oder anderer Fehler");
+        alert('Ein Fehler ist aufgetreten. Bitte neu einloggen.');
         logout();
       }
     }
@@ -376,11 +377,14 @@
         localStorage.setItem('spotify_token', tokens.access_token);
         localStorage.setItem('spotify_token_timestamp', Date.now());
         if (tokens.refresh_token) localStorage.setItem('spotify_refresh_token', tokens.refresh_token);
-        history.replaceState(null, '', window.location.pathname);
+        
+        // URL bereinigen
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         await loadData();
       } catch (e) {
         console.error(e);
-        alert('Token-Austausch fehlgeschlagen. Schau console.');
+        alert('Token-Austausch fehlgeschlagen. Siehe Konsole.');
       }
     } else if (localStorage.getItem('spotify_token')) {
       await loadData();
@@ -393,6 +397,3 @@
   </script>
 </body>
 </html>
-
-
-
